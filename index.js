@@ -251,31 +251,38 @@ const addEmployee = () => {
                 }
             ])
             .then((data) => {
-                const param = [data.firstName, data.lastName, data.role];
-                db.query('SELECT CONCAT(first_name," ", last_name) AS name, manager_id AS id FROM employee;', (err, result) => {
+                const roleId = role.indexOf(data.role) + 1;
+                const param = [data.firstName, data.lastName, roleId];
+                db.query('SELECT id, CONCAT(first_name," ", last_name) AS name FROM employee;', (err, result) => {
                     if(err) {
                         console.log(err)
                     }
                     const manager = result.map(({name, id}) => {
                         return {
-                            name,
-                            id
+                            id,
+                            name
                         }
                     })
-                    console.log(manager);
+                    console.table(manager);
                     inquirer
                         .prompt([
                             {
-                                name: 'manager',
-                                message:'Please select the employees manager?',
-                                type: 'list',
-                                choices: manager
+                                name: 'managerId',
+                                message:'Please enter your managers ID number?',
+                                type: 'input'
                             }
                         ])
                         .then((data) => {
-                            console.log(data);
-                             param.push(data.manager);
-                             console.log(param);
+                             param.push(data.managerId);
+                             db.query('INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES(?, ?, ?, ?);', param, (err, result) => {
+                                 if(err) {
+                                     console.log(err);
+                                 }
+                                 console.log('');
+                                 console.log(`${param[0]} ${param[1]} is now a registered employee!`);
+                                 console.log('');
+                                 menu();
+                             })
                         })
                         .catch((err) => console.log(err));
                 })
