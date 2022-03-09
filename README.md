@@ -11,22 +11,33 @@ This is a simple Employee tracker app that lets anyone even with out any compute
 - [Resources](#resources) 
 - [Screenshots](#screenshots) 
 - [Contact](#contact)
+- [Usage](#usage)
   
 ## Resources
 
 > [Github Repo](https://github.com/mckayjalex/employee-tracker)
 
-> []()
+> [Walkthrough Video](https://youtu.be/-nWH-2qkbng)
 
 ## Screenshots 
 
-Webpage
+Welcome Page
 
-![]()
+![Welcome](images/welcome-page.png)
 
-Demo
+Googbye Page
 
-![]()
+![Goodbye](images/goodbye-page.png)
+
+## Usage
+
+Run this below code inside your CLI (Terminal on Mac)
+
+> npm install
+
+Then run..
+
+> npm start
 
 ## Contact
 

@@ -1,10 +1,10 @@
+// IMPORTS
 const inquirer = require('inquirer');
 const mysql = require('mysql2');
 const conTable = require('console.table');
 const logo = require('asciiart-logo');
 const config = require('./package.json');
-// console.log(logo(config).render());
-
+// CONNECTION
 const db = mysql.createConnection(
     {
         host: 'localhost',
@@ -368,19 +368,27 @@ const updateEmployeeManager = () => {
                 }
             ])
             .then((data) => {
-                const empId = employees.indexOf(data.employee) + 1;
-                const manId = employees.indexOf(data.newManager) + 1;
-                const param = [manId, empId];
-                console.log(param)
-                const sql = 'UPDATE employee SET manager_id = (?) WHERE id = (?);';
-                db.query(sql, param, (err, result) => {
+                const emp = data.employee.split(" ");
+                const man = data.newManager.split(" ");
+                const sql = 'SELECT id FROM employee WHERE first_name = (?);';
+                db.query(sql, man[0], (err, result) => {
                     if (err) {
                         console.log(err);
                     }
-                    console.log();
-                    console.log(`${data.employee} has a new manager!`);
-                    console.log();
-                    menu();
+                    const manId = result.map(({ id }) => {
+                        return id;
+                    })
+                    const param = [manId, emp[0]];
+                    const sql = 'UPDATE employee SET manager_id = (?) WHERE first_name = (?);';
+                    db.query(sql, param, (err, result) => {
+                        if (err) {
+                            console.log(err);
+                        }
+                        console.log();
+                        console.log(`${data.employee} has a new manager!`);
+                        console.log();
+                        menu();
+                    })
                 })
             })
             .catch((err) => console.log(err));
@@ -450,8 +458,14 @@ const viewEmployeeByDepartment = () => {
                     if (err) {
                         console.log(err);
                     }
-                    console.log();
-                    console.table(result);
+                    if (result.length === 0) {
+                        console.log();
+                        console.log(`${data.dept} has no staff!`);
+                        console.log();
+                    } else {
+                        console.log();
+                        console.table(result);
+                    }
                     menu();
                 })
             })
@@ -560,14 +574,14 @@ const deleteDepartment = () => {
 // View Total Department Budget Status
 const viewStatus = () => {
     db.query('SELECT name FROM department;', (err, result) => {
-        if(err) {
+        if (err) {
             console.log(err);
         }
         const dept = result.map(({ name }) => {
             return name;
         })
         inquirer
-            .prompt([   
+            .prompt([
                 {
                     name: 'dept',
                     message: 'Please select which departments budget you would like to view?',
@@ -579,7 +593,7 @@ const viewStatus = () => {
                 const department = data.dept;
                 const sql = 'SELECT SUM(salary) AS Total FROM role JOIN department ON department.id=role.department_id WHERE department.name = (?);';
                 db.query(sql, department, (err, result) => {
-                    if(err) {
+                    if (err) {
                         console.log(err);
                     }
                     console.log();
