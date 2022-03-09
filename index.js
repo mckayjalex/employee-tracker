@@ -248,40 +248,57 @@ const addEmployee = () => {
                 }
             ])
             .then((data) => {
-                const roleId = role.indexOf(data.role) + 1;
-                const param = [data.firstName, data.lastName, roleId];
-                db.query('SELECT id, CONCAT(first_name," ", last_name) AS name FROM employee;', (err, result) => {
+                const param = [data.firstName, data.lastName]
+                const empName = data.firstName + " " + data.lastName;
+                db.query('SELECT id FROM role WHERE title = (?);', data.role, (err, result) => {
                     if (err) {
                         console.log(err)
                     }
-                    const manager = result.map(({ name, id }) => {
-                        return {
-                            id,
-                            name
-                        }
+                    const roleId = result.map(({ id }) => {
+                        return id;
                     })
-                    console.table(manager);
-                    inquirer
+                    param.push(roleId);
+                    db.query('SELECT CONCAT(first_name, " ", last_name) AS name FROM employee;', (err, result) => {
+                        if(err) {
+                            console.log(err);
+                        }
+                        const manager = result.map(({ name }) => {
+                            return name;
+                        })
+                        inquirer
                         .prompt([
                             {
-                                name: 'managerId',
-                                message: 'Please enter your managers ID number from the list above',
-                                type: 'input'
+                                name: 'manager',
+                                message: 'Please select your manager?',
+                                type: 'list',
+                                choices: manager
                             }
                         ])
                         .then((data) => {
-                            param.push(data.managerId);
-                            db.query('INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES(?, ?, ?, ?);', param, (err, result) => {
-                                if (err) {
+                            const man = data.manager.split(" ");
+                            db.query('SELECT id FROM employee WHERE first_name = (?);', man, (err, result) => {
+                                if(err) {
                                     console.log(err);
                                 }
-                                console.log();
-                                console.log(`${param[0]} ${param[1]} is now a registered employee!`);
-                                console.log();
-                                menu();
+                                const manId = result.map(({ id }) => {
+                                    return id;
+                                })
+                                param.push(manId);
+                                const sql = 'INSERT INTO employee(first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)';
+                                db.query(sql, param, (err, result) => {
+                                    if(err) {
+                                        console.log(err);
+                                    }
+                                    console.log();
+                                    console.log(`${empName} is now a registered employee!`);
+                                    console.log();
+                                    menu();
+                                })
                             })
                         })
                         .catch((err) => console.log(err));
+                    })
+                    
                 })
             })
             .catch((error) => console.log(error));
@@ -306,8 +323,8 @@ const updateEmployeeRole = () => {
                 }
             ])
             .then((data) => {
-                const emp = data.employee;
-                const empId = employees.indexOf(data.employee) + 1;
+                const employee = data.employee;
+                const emp = data.employee.split(" ");
                 db.query('SELECT title FROM role;', (err, result) => {
                     if (err) {
                         console.log(err);
@@ -319,25 +336,33 @@ const updateEmployeeRole = () => {
                         .prompt([
                             {
                                 name: 'role',
-                                message: 'Please select the employees new role',
+                                message: 'Please select the employees new role?',
                                 type: 'list',
                                 choices: role
                             }
                         ])
                         .then((data) => {
-                            const roleId = role.indexOf(data.role) + 1;
-                            const param = [roleId, empId];
-                            const sql = 'UPDATE employee SET role_id = (?) WHERE id = (?);'
-                            db.query(sql, param, (err, result) => {
+                            db.query('SELECT id FROM role WHERE title = (?);', data.role, (err, result) => {
                                 if (err) {
                                     console.log(err);
                                 }
-                                console.log();
-                                console.log(`${emp}'s role was updated!`);
-                                console.log();
-                                menu();
+                                const roleId = result.map(({ id }) => {
+                                    return id;
+                                })
+                                const param = [roleId, emp[0]];
+                                const sql = 'UPDATE employee SET role_id = (?) WHERE first_name = (?)';
+                                db.query(sql, param, (err, result) => {
+                                    if (err) {
+                                        console.log(err);
+                                    }
+                                    console.log();
+                                    console.log(`${employee}'s role was updated!`);
+                                    console.log();
+                                    menu();
+                                })
                             })
                         })
+                        .catch((err) => console.log(err));
                 })
             })
             .catch((err) => console.log(err));
@@ -446,13 +471,20 @@ const viewEmployeeByDepartment = () => {
             .prompt([
                 {
                     name: 'dept',
-                    message: 'Please select deaprtment in which youd like to view employees?',
+                    message: 'Please select department in which youd like to view employees?',
                     type: 'list',
                     choices: dept
                 }
             ])
             .then((data) => {
-                const deptId = dept.indexOf(data.dept) + 1;
+                db.query('SELECT id FROM department WHERE name = (?);', data.dept, (err, result) => {
+                if (err) {
+                    console.log(err);
+                }
+                const deptId = result.map(({ id }) => {
+                    return id;
+                })
+                console.log(deptId)
                 const sql = 'SELECT employee.id AS ID, CONCAT(first_name, " ", last_name) AS Name, title AS Title, salary AS Salary FROM employee JOIN role ON role.id=employee.role_id JOIN department ON department.id=role.department_id WHERE role.department_id = (?);';
                 db.query(sql, deptId, (err, result) => {
                     if (err) {
@@ -468,6 +500,7 @@ const viewEmployeeByDepartment = () => {
                     }
                     menu();
                 })
+            })
             })
     })
 }
